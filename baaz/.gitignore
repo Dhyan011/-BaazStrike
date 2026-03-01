@@ -1,0 +1,14 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/baaz.db
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts
+frontend/package-lock.json
+
+# Env
+backend/.env
