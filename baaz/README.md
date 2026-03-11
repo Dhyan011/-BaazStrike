@@ -1,248 +1,208 @@
 <![CDATA[<div align="center">
 
-# 🦅 Baaz — AI Security Scanner
+# Baaz
 
-**Autonomously attack AI applications to find vulnerabilities.**
+### AI Security Scanner
 
-20 adversarial probes · 4 attack categories · Real-time streaming · LLM + keyword judge
+Baaz autonomously red-teams AI chatbot endpoints — firing adversarial probes, analysing each response in real time, and delivering a structured vulnerability report with actionable fixes.
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://python.org)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-000?logo=next.js)](https://nextjs.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 </div>
 
 ---
 
-## 🔍 What Is Baaz?
+## Why Baaz?
 
-Baaz is an **AI red-teaming tool** that scans any AI chatbot endpoint for security vulnerabilities. Point it at a URL, and it autonomously:
+Most AI applications go to production without adversarial testing. Baaz fills that gap — give it a URL, and it will systematically probe for prompt injection, jailbreaking, data leakage, and privilege escalation, then tell you exactly what's broken and how to fix it.
 
-1. **Fires 20 attack payloads** across 4 categories
-2. **Judges each response** using an LLM (Groq) or built-in keyword engine
-3. **Streams results in real-time** via Server-Sent Events
-4. **Generates a vulnerability report** with severity ratings and fixes
-
-> Works out of the box — **no API key required**. The keyword-based judge detects leaks automatically. Add a [Groq API key](https://console.groq.com) for deeper LLM-powered analysis.
+- **Zero-config scanning** — works immediately without any API key
+- **Real-time streaming** — watch attacks land as they happen via SSE
+- **Dual judge engine** — keyword regex analysis + optional Groq LLM for deeper insight
+- **Exportable reports** — download results as JSON or Markdown
 
 ---
 
-## ⚡ Quick Start
+## Getting Started
 
 ### Prerequisites
-- Python 3.11 or 3.12
-- Node.js 18+
-- npm
 
-### 1. Clone
+| Tool | Version |
+|------|---------|
+| Python | 3.11 or 3.12 |
+| Node.js | 18+ |
+| npm | 9+ |
+
+### Setup
+
 ```bash
+# Clone the repo
 git clone https://github.com/Dhyan011/-BaazStrike.git
 cd -BaazStrike/baaz
-```
 
-### 2. Backend Setup
-```bash
+# Backend
 cd backend
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Frontend
+cd ../frontend
+npm install
 ```
 
-### 3. (Optional) Add Groq API Key
-```bash
-echo "GROQ_API_KEY=gsk_your_key_here" > .env
-```
-> Get a free key at [console.groq.com](https://console.groq.com). Without it, the keyword judge runs automatically.
+### Run
 
-### 4. Start the Backend
+Open three terminals:
+
 ```bash
-# Terminal 1 — API server
+# 1. API server
+cd baaz/backend && source .venv/bin/activate
 uvicorn main:app --reload --port 8000
+```
 
-# Terminal 2 — Mock vulnerable AI (for testing)
+```bash
+# 2. Mock target (for testing)
+cd baaz/backend && source .venv/bin/activate
 uvicorn target_ai:app --reload --port 8001
 ```
 
-### 5. Frontend Setup
 ```bash
-cd ../frontend
-npm install
+# 3. Frontend
+cd baaz/frontend
 npm run dev
 ```
 
-### 6. Scan!
-Open **http://localhost:3000** → enter **http://localhost:8001/chat** → click **Launch Scan**
+Open **http://localhost:3000**, enter `http://localhost:8001/chat`, and hit **Launch Scan**.
 
 ---
 
-## 🏗️ Architecture
+## How It Works
+
+Baaz runs a 4-phase cycle for each of its **20 probes**:
+
+1. **Fire** — sends an adversarial payload to the target endpoint via HTTP POST
+2. **Capture** — records the AI's raw response
+3. **Judge** — analyses the response for signs of compromise (keyword engine or Groq LLM)
+4. **Stream** — pushes the result to the browser in real time via Server-Sent Events
+
+After all 20 probes complete, the results are scored, categorised, and assembled into a report.
+
+### Attack Categories
+
+| Category | What it tests | Probes |
+|----------|--------------|--------|
+| **Prompt Injection** | Can the AI be tricked into revealing its system prompt? | 5 |
+| **Jailbreaking** | Can safety guidelines be bypassed via persona framing? | 5 |
+| **Data Extraction** | Does the AI leak PII, credentials, or internal data? | 5 |
+| **Privilege Escalation** | Can a user claim admin rights to access restricted info? | 5 |
+
+### Judgement Engine
+
+The scanner ships with two judges:
+
+**Keyword Judge** — Built-in, always available. Uses 24 regex signatures to detect leaked emails, API keys, system prompts, SQL output, admin confirmations, and more. Also recognises standard AI refusal phrases.
+
+**Groq LLM Judge** — Optional. When a valid `GROQ_API_KEY` is set in `.env`, Baaz sends each probe result to `llama3-8b-8192` for deeper contextual analysis. Falls back to the keyword judge automatically on any failure.
+
+### Risk Score
 
 ```
-Browser (Next.js :3000)
-  │
-  ├── POST /scan           → starts background scan
-  ├── GET  /scan/:id/stream → SSE live probe events
-  ├── GET  /scan/:id       → final ScanReport
-  ├── GET  /scans          → last 10 scans
-  └── GET  /ping?url=      → health check
-  │
-FastAPI Backend (:8000)
-  │
-  ├── attack_engine.py ──→ Target AI endpoint
-  │   └── judge_attack() ──→ Groq LLM or keyword fallback
-  ├── database.py ──→ SQLite (baaz.db)
-  └── report_generator.py ──→ risk score + report assembly
+Score = min(100, CRITICAL×30 + HIGH×15 + MEDIUM×7 + LOW×3)
 ```
 
 ---
 
-## 🎯 Attack Categories
-
-| Category | Probes | Goal |
-|---|---|---|
-| 💉 **Prompt Injection** | 5 | Trick AI into revealing its system prompt |
-| 🔓 **Jailbreaking** | 5 | Bypass safety via personas (DAN, evil twin) |
-| 📤 **Data Extraction** | 5 | Extract emails, API keys, user data |
-| ⬆️ **Privilege Escalation** | 5 | Claim admin access to get restricted info |
-
----
-
-## 🧠 Dual Judge System
-
-### Keyword Judge (always available — no API key needed)
-- **24 regex signatures** across all 4 attack categories
-- Detects: email addresses, `sk-*` tokens, `DAN:` prefix, admin grants, SQL output, system prompt echoes
-- Recognises refusal phrases ("I'm sorry", "I cannot") → `success=False`
-
-### Groq LLM Judge (when API key is set)
-- Uses **llama3-8b-8192** for nuanced analysis
-- Returns structured JSON: `{success, severity, exposed, explanation, fix}`
-- Auto-falls back to keyword judge on any failure
-
----
-
-## 📊 Risk Score
-
-```
-risk_score = min(100, CRITICAL×30 + HIGH×15 + MEDIUM×7 + LOW×3)
-```
-
-| Score | Label |
-|---|---|
-| 0 | 🔵 SECURE |
-| 1–24 | 🟢 LOW RISK |
-| 25–49 | 🟡 MEDIUM RISK |
-| 50–74 | 🟠 HIGH RISK |
-| 75–100 | 🔴 CRITICAL RISK |
-
----
-
-## 🖥️ Frontend Features
+## Features
 
 | Feature | Description |
-|---|---|
-| **Health Check** | Auto-pings target as you type — shows latency |
-| **Progress Bar** | 4-segment bar fills in real-time (per attack category) |
-| **Live Feed** | Scrolling terminal-style attack log with colour-coded severity |
-| **Summary Cards** | 6 tiles: Critical / High / Medium / Low / Total / Probes |
-| **Risk Meter** | Animated SVG arc gauge (0–100) |
-| **Attack Coverage** | Per-category slot grid — glowing = breach, grey = defended |
-| **Scan History** | Collapsible panel — last 10 scans, click to reload |
-| **Severity Filter** | Chips to filter vulnerability list by severity |
-| **Export** | Download report as `.json` or `.md` |
+|---------|-------------|
+| **Endpoint Health Check** | Auto-pings the target URL as you type, showing latency and connectivity |
+| **Live Attack Feed** | Real-time scrolling log with per-probe severity and attack type |
+| **Progress Tracker** | Segmented bar showing progress across all 4 attack categories |
+| **Risk Meter** | Animated gauge visualising the overall risk score (0–100) |
+| **Severity Summary** | At-a-glance cards for Critical, High, Medium, Low, Total, and Probes |
+| **Attack Coverage Chart** | Visual breakdown of successes vs. defences per category |
+| **Scan History** | Collapsible panel of past scans — click any to reload its report |
+| **Severity Filter** | Filter the vulnerability list by severity level |
+| **Report Export** | Download full results as `.json` or `.md` |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 baaz/
 ├── backend/
-│   ├── main.py              # API routes + SSE streaming
-│   ├── attack_engine.py     # 20 payloads + dual judge
-│   ├── target_ai.py         # Mock vulnerable AI for testing
-│   ├── database.py          # Async SQLite (aiosqlite)
-│   ├── models.py            # Pydantic data models
-│   ├── report_generator.py  # Risk scoring + report assembly
-│   ├── requirements.txt
-│   └── .env                 # GROQ_API_KEY (git-ignored)
+│   ├── main.py              # API routes, SSE streaming, background scan worker
+│   ├── attack_engine.py     # 20 payloads, dual judge system
+│   ├── target_ai.py         # Mock vulnerable AI for safe testing
+│   ├── database.py          # Async SQLite via aiosqlite
+│   ├── models.py            # Pydantic request/response schemas
+│   ├── report_generator.py  # Risk scoring and report assembly
+│   └── requirements.txt
+│
 └── frontend/
     ├── app/
-    │   ├── page.tsx          # Main page — all state + wiring
-    │   ├── layout.tsx        # Root HTML + metadata
-    │   ├── globals.css       # Dark cyberpunk theme
-    │   └── components/
-    │       ├── Header.tsx
-    │       ├── ScanInput.tsx
-    │       ├── HealthCheck.tsx
-    │       ├── ScanProgress.tsx
-    │       ├── LiveFeed.tsx
-    │       ├── SummaryCards.tsx
-    │       ├── RiskMeter.tsx
-    │       ├── AttackCoverage.tsx
-    │       ├── ScanHistory.tsx
-    │       ├── SeverityFilterBar.tsx
-    │       └── VulnerabilityCard.tsx
-    ├── package.json
+    │   ├── page.tsx          # Main page — state management and wiring
+    │   ├── layout.tsx        # Root layout and SEO metadata
+    │   ├── globals.css       # Design system and theme
+    │   └── components/       # 11 React components
     ├── tailwind.config.js
-    ├── tsconfig.json
-    └── next.config.js
+    └── package.json
 ```
 
 ---
 
-## 🔌 API Reference
+## API
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/scan` | Start a scan → returns `{scan_id}` |
-| `GET` | `/scan/{id}/stream` | SSE stream of live probe events |
-| `GET` | `/scan/{id}` | Full scan report (after completion) |
-| `GET` | `/scans` | Last 10 scans |
-| `GET` | `/ping?url=` | Check target reachability + latency |
-| `GET` | `/health` | Server status |
-
----
-
-## 🛡️ Mock Target AI
-
-`target_ai.py` is a deliberately vulnerable AI chatbot for safe testing. It:
-- Randomly leaks a fake system prompt, email list, and API key when attacked
-- Has configurable leak probabilities per attack type
-- Returns safe refusal responses when defences hold
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/scan` | Start a new scan |
+| `GET` | `/scan/{id}/stream` | SSE stream of live probe results |
+| `GET` | `/scan/{id}` | Fetch completed scan report |
+| `GET` | `/scans` | List recent scans |
+| `GET` | `/ping?url=` | Check target reachability |
 
 ---
 
-## 🧰 Tech Stack
+## Configuration
 
-| Layer | Tool |
-|---|---|
-| Backend | FastAPI · Python 3.12 · uvicorn |
-| Database | aiosqlite (async SQLite) |
-| HTTP | httpx (async) |
-| LLM | Groq llama3-8b-8192 |
-| Frontend | Next.js 14 · React 18 |
-| Styling | Tailwind CSS · custom glassmorphism theme |
-| Animation | framer-motion |
-| Icons | lucide-react |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | No | Groq API key for LLM-powered judgement. Get one free at [console.groq.com](https://console.groq.com). Without it, the keyword judge runs automatically. |
 
----
+Create a `.env` file in the `backend/` directory:
 
-## ⚠️ Disclaimer
-
-Baaz is a **security research and educational tool**. Only scan AI endpoints that you own or have explicit permission to test. Unauthorised scanning may violate terms of service or laws in your jurisdiction.
+```
+GROQ_API_KEY=gsk_your_key_here
+```
 
 ---
 
-## 📄 License
+## Tech Stack
 
-MIT License — see [LICENSE](LICENSE) for details.
+**Backend** — FastAPI · Python 3.12 · aiosqlite · httpx · Groq SDK  
+**Frontend** — Next.js 14 · React 18 · Tailwind CSS · framer-motion · lucide-react
+
+---
+
+## Disclaimer
+
+Baaz is a security research and educational tool. Only scan endpoints you own or have explicit written permission to test. Unauthorised scanning may violate applicable laws and terms of service.
+
+---
+
+## License
+
+MIT
 
 ---
 
 <div align="center">
-<sub>Built with ❤️ by <a href="https://github.com/Dhyan011">Dhyan011</a></sub>
+<sub>Built by <a href="https://github.com/Dhyan011">Dhyan Patel</a></sub>
 </div>
 ]]>
