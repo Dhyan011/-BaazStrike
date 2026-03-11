@@ -18,6 +18,10 @@ const CATEGORIES = [
     { key: "jailbreaking", label: "Jailbreaking", color: "#ff6b35", bg: "rgba(255,107,53,0.15)" },
     { key: "data_extraction", label: "Data Extraction", color: "#fbbf24", bg: "rgba(251,191,36,0.15)" },
     { key: "privilege_escalation", label: "Priv. Escalation", color: "#ff4757", bg: "rgba(255,71,87,0.15)" },
+    { key: "sql_injection", label: "SQL Injection", color: "#3b82f6", bg: "rgba(59,130,246,0.15)" },
+    { key: "xss", label: "Cross-Site Scripting", color: "#10b981", bg: "rgba(16,185,129,0.15)" },
+    { key: "command_injection", label: "Command Injection", color: "#ef4444", bg: "rgba(239,68,68,0.15)" },
+    { key: "path_traversal", label: "Path Traversal", color: "#8b5cf6", bg: "rgba(139,92,246,0.15)" },
 ];
 
 const PROBES_PER_CAT = 5;

@@ -13,6 +13,8 @@ import ScanProgress from "./components/ScanProgress";
 import ScanHistory from "./components/ScanHistory";
 import AttackCoverage from "./components/AttackCoverage";
 import SeverityFilterBar, { type SeverityFilter } from "./components/SeverityFilterBar";
+import LoginOverlay from "./components/LoginOverlay";
+import EventsSidebar from "./components/EventsSidebar";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -124,15 +126,20 @@ function generateMarkdown(report: ScanReport): string {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
+import { ShieldAlert, Globe, ChevronRight } from "lucide-react";
+
 export default function HomePage() {
     const [scanId, setScanId] = useState<string | null>(null);
     const [isScanning, setIsScanning] = useState(false);
+    const [targetUrl, setTargetUrl] = useState<string>("");
     const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
     const [probeCount, setProbeCount] = useState(0);
     const [report, setReport] = useState<ScanReport | null>(null);
     const [reportLoading, setReportLoading] = useState(false);
     const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
     const eventSourceRef = useRef<EventSource | null>(null);
+
+    const status = report ? "completed" : isScanning ? "scanning" : "idle";
 
     const fetchReport = useCallback(async (id: string) => {
         setReportLoading(true);
@@ -220,6 +227,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-background grid-bg">
+            <LoginOverlay />
             <Header />
 
             {/* Hero section */}
@@ -236,10 +244,10 @@ export default function HomePage() {
                                 <span className="ping-ring absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
                             </span>
-                            AI Red-Team Scanner
+                            University Security Hub
                         </span>
                         <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-text-primary mb-4">
-                            Hunt AI<br />
+                            Learn & Hunt<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent-cyan to-accent-purple">
                                 Vulnerabilities
                             </span>
@@ -247,8 +255,7 @@ export default function HomePage() {
                         <p className="text-text-secondary text-lg max-w-2xl mx-auto">
                             Baaz autonomously fires{" "}
                             <span className="text-text-primary font-semibold">20 targeted attack probes</span> across
-                            prompt injection, jailbreaking, data extraction, and privilege escalation — then uses an
-                            LLM judge to assess each result.
+                            AI and traditional Web targets. Scan, learn, and collaborate with your peers.
                         </p>
                     </motion.div>
                 </div>
@@ -283,6 +290,7 @@ export default function HomePage() {
                     {/* Right 1/3 — risk meter + history */}
                     <div className="space-y-5">
                         <RiskMeter score={report?.summary.risk_score ?? 0} />
+                        <EventsSidebar />
                         <ScanHistory onLoadScan={handleLoadHistoryScan} activeScanId={scanId} />
                     </div>
                 </div>

@@ -1,8 +1,8 @@
 """
 models.py — Pydantic data models for Baaz.
 """
-from pydantic import BaseModel
-from typing import Literal, List
+from pydantic import BaseModel, Field
+from typing import Literal, List, Any
 
 
 class ScanRequest(BaseModel):
@@ -18,6 +18,8 @@ class AttackResult(BaseModel):
     exposed: str
     explanation: str
     fix: str
+    educational_content: str = ""
+    resources: List[Any] = Field(default_factory=list)
 
 
 class ScanSummary(BaseModel):

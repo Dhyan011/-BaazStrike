@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { AuthProvider } from "./context/AuthContext";
+
 export const metadata: Metadata = {
-    title: "Baaz — AI Security Scanner",
-    description: "Autonomously attacks AI applications to find vulnerabilities and generate detailed security reports.",
-    keywords: ["AI security", "vulnerability scanner", "penetration testing", "LLM security", "prompt injection"],
+    title: "Baaz — College Security Hub",
+    description: "Autonomously attacks AI and web applications to teach students about cybersecurity.",
+    keywords: ["cybersecurity", "student", "university", "CTF"],
 };
 
 export default function RootLayout({
@@ -14,7 +16,11 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className="antialiased">{children}</body>
+            <body className="antialiased">
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
+            </body>
         </html>
     );
 }
