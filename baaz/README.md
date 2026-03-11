@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # Baaz
 
@@ -205,4 +205,3 @@ MIT
 <div align="center">
 <sub>Built by <a href="https://github.com/Dhyan011">Dhyan Patel</a></sub>
 </div>
-]]>
